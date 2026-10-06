@@ -129,6 +129,7 @@ zsum beispiel.iso MD5          # anderer Algorithmus
 ```
 
 <img src="screenshots/linux-create.png" alt="Einzelne Datei und Ordner unter Linux" width="70%">
+<img src="screenshots/windows-md5.png" alt="Expliziter Algorithmus unter Windows" width="60%">
 
 Ganze Ordner oder Platzhalter verarbeiten:
 
@@ -136,7 +137,12 @@ Ganze Ordner oder Platzhalter verarbeiten:
 zsum Musik                     # alle Dateien im Ordner
 zsum '*.iso'                   # Platzhalter (Linux: in Anführungszeichen oder ohne)
 zsum *.iso SHA512
+zsum beispiel.iso BLAKE2       # Linux: auch BLAKE2 und CRC32
+zsum beispiel.iso CRC32
 ```
+
+<img src="screenshots/linux-wildcard.png" alt="Platzhalter unter Linux" width="70%">
+<img src="screenshots/linux-algos.png" alt="BLAKE2 und CRC32 unter Linux" width="90%">
 
 Prüfsummen in eine Datei speichern (Umleitung) und später abgleichen:
 
@@ -183,6 +189,18 @@ Wurde kein Algorithmus angegeben, erkennt zsum ihn **automatisch aus der Hashdat
 
 Standard ist **SHA256**. Windows-Nutzer geben MD2/MD4 am besten explizit an — bei der automatischen Erkennung werden sie wegen der gleichen Länge wie MD5 interpretiert; BLAKE2 lässt sich an der Länge nicht eindeutig erkennen.
 
+#### 🌐 Sprache
+
+Mit `-de` und `-en` wird die Sprache aller Meldungen und der Hilfeseite pro Aufruf umgeschaltet:
+
+```bash
+zsum -en beispiel.iso SHA512
+zsum -en urlaub.iso SHA512     # Fehlermeldung auf Englisch
+```
+
+<img src="screenshots/linux-english.png" alt="Englische Ausgabe unter Linux" width="90%">
+<img src="screenshots/windows-english.png" alt="Englische Ausgabe unter Windows" width="70%">
+
 ### 🔀 Unterschiede zwischen Linux und Windows
 
 | | Linux (`zsum`) | Windows (`zsum.bat`) |
@@ -199,6 +217,8 @@ Standard ist **SHA256**. Windows-Nutzer geben MD2/MD4 am besten explizit an — 
 - **Farben stören** (z. B. alte Konsole): Aufruf mit `-nc`, unter Linux zusätzlich dauerhaft per Umgebungsvariable `NO_COLOR`.
 - **Zwei Dateien, gleicher Länge, falscher Algorithmus?** Bei Abgleich mit explizit angegebenem Algorithmus bleibt alles eindeutig — im Zweifel SHA256 verwenden.
 - **Exit-Codes:** `0` = alles gut, `1` = Fehler (z. B. Pfad nicht gefunden) — praktisch für eigene Skripte.
+
+<img src="screenshots/windows-error.png" alt="Fehlermeldung unter Windows" width="60%">
 
 ### 📄 Lizenz
 
@@ -315,13 +335,20 @@ zsum beispiel.iso
 zsum beispiel.iso MD5          # different algorithm
 ```
 
+<img src="screenshots/windows-md5.png" alt="Explicit algorithm on Windows" width="60%">
+
 Process folders or wildcards:
 
 ```bash
 zsum Music                     # all files inside the folder
 zsum '*.iso'                   # wildcard
 zsum *.iso SHA512
+zsum beispiel.iso BLAKE2       # Linux: BLAKE2 and CRC32 as well
+zsum beispiel.iso CRC32
 ```
+
+<img src="screenshots/linux-wildcard.png" alt="Wildcards on Linux" width="70%">
+<img src="screenshots/linux-algos.png" alt="BLAKE2 and CRC32 on Linux" width="90%">
 
 Save checksums to a file (redirection) and verify later:
 
@@ -367,6 +394,18 @@ If no algorithm was specified, zsum **auto-detects it from the hashfile** (hash 
 
 The default is **SHA256**. On Windows, specify MD2/MD4 explicitly — due to their length, automatic detection interprets them as MD5; BLAKE2 cannot be identified by length alone.
 
+#### 🌐 Language
+
+`-de` and `-en` switch the language of all messages and the help page per call:
+
+```bash
+zsum -en beispiel.iso SHA512
+zsum -en urlaub.iso SHA512     # error message in English
+```
+
+<img src="screenshots/linux-english.png" alt="English output on Linux" width="90%">
+<img src="screenshots/windows-english.png" alt="English output on Windows" width="70%">
+
 ### 🔀 Differences between Linux and Windows
 
 | | Linux (`zsum`) | Windows (`zsum.bat`) |
@@ -382,6 +421,8 @@ The default is **SHA256**. On Windows, specify MD2/MD4 explicitly — due to the
 - **“zsum: command not found”** — open a **new** console window after changing `PATH`; on Linux check `echo $PATH`.
 - **Colors cause trouble** (e.g. on legacy consoles): pass `-nc`, or disable them permanently on Linux via the `NO_COLOR` environment variable.
 - **Exit codes:** `0` = success, `1` = error (e.g. path not found) — handy for your own scripts.
+
+<img src="screenshots/windows-error.png" alt="Error message on Windows" width="60%">
 
 ### 📄 License
 
