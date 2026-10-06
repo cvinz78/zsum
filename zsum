@@ -1,0 +1,808 @@
+#!/usr/bin/env bash
+
+# ====================================================================
+# csum - Prüfsummen erstellen und prüfen
+# cvinz78
+# Version 1.2
+# ====================================================================
+
+set -u
+
+# ====================================================================
+# Fallback für ältere Konsolen ohne ANSI-Support:
+# -nc / --no-color schaltet alle Farben ab. Die Erkennung läuft vor
+# den Farbdefinitionen; die Option wird aus den Argumenten entfernt,
+# damit sie nicht als Pfad gedeutet wird.
+# ====================================================================
+
+USE_COLOR=1
+
+if [[ -n "${NO_COLOR:-}" ]]; then
+    USE_COLOR=0
+fi
+
+FILTERED_ARGS=()
+
+for ARG in "$@"; do
+    if [[ "$ARG" == "-nc" || "$ARG" == "--no-color" ]]; then
+        USE_COLOR=0
+    else
+        FILTERED_ARGS+=("$ARG")
+    fi
+done
+
+set -- ${FILTERED_ARGS[@]+"${FILTERED_ARGS[@]}"}
+
+# ====================================================================
+# Farbschema
+# Farben nur bei Ausgabe in ein Terminal; bei Pipes/Umleitung bleibt
+# die Ausgabe ohne Escape-Sequenzen und damit maschinenlesbar.
+# ====================================================================
+
+if [[ -t 1 && "$USE_COLOR" -eq 1 ]]; then
+    C_HEAD=$'\033[1;96m'    # Überschriften (Hell Cyan)
+    C_TEXT=$'\033[1;93m'    # Normaler Text (Hell Gelb)
+    C_ERR=$'\033[1;91m'     # Warnung / Fehler (Hell Rot)
+    C_FILE=$'\033[1;35m'    # Datei / Befehl (Hell Lila)
+    C_OK=$'\033[1;92m'      # Alles andere (Hell Grün)
+    C_RESET=$'\033[0m'
+else
+    C_HEAD=""
+    C_TEXT=""
+    C_ERR=""
+    C_FILE=""
+    C_OK=""
+    C_RESET=""
+fi
+
+# ====================================================================
+# Standardwerte
+# ====================================================================
+
+OUT_LANG="DE"
+ALGO="SHA256"
+# EXPLICIT_ALGO=1, sobald der Algorithmus per Parameter oder aus dem
+# Hashdateinamen gesetzt wurde; dann wird nichts mehr automatisch
+# überschrieben.
+EXPLICIT_ALGO=0
+HASHFILE=""
+SHOW_HELP=0
+
+SUPPORTED_ALGOS="MD2 MD4 MD5 SHA1 SHA256 SHA384 SHA512 BLAKE2 B2 BLAKE2B BLAKE2S CRC32"
+
+POSITIONAL=()
+TARGETS=()
+
+# ====================================================================
+# Texte laden
+# ====================================================================
+
+load_texts() {
+    if [[ "$OUT_LANG" == "EN" ]]; then
+        L_USAGE="Usage:"
+        L_OPTIONS="Options:"
+        L_HELP="Shows this help page."
+        L_NC="Disables all colors (fallback for older consoles)."
+        L_DE="Forces German output."
+        L_EN="Forces English output."
+        L_PARAMETER="Parameters:"
+        L_PATH="(Required) Path to a file, directory, or wildcard."
+        L_PATH2="Directories are processed without subdirectories. Wildcards are supported."
+        L_ALGO="(Optional) Hash algorithm."
+        L_ALGO2="Default: SHA256."
+        L_ALGO3="Valid values: MD2, MD4, MD5, SHA1, SHA256, SHA384, SHA512, BLAKE2, B2, BLAKE2B, BLAKE2S, CRC32."
+        L_HASHFILE="(Optional) File containing reference hashes."
+        L_HASHFILE2="Can have any filename and extension."
+        L_NO_PATH="Error: No path provided."
+        L_HINT="Type \"${0##*/} --help\" to display help."
+        L_HASHFILE_NOT_FOUND="Hashfile not found:"
+        L_PATH_NOT_FOUND="Path, wildcard, or directory not found:"
+        L_ERROR="ERROR"
+        L_UNSUPPORTED="Error: The specified algorithm is not supported:"
+        L_MISSING_HASHFILE="Error: --hashfile requires a filename."
+        L_CRC_NOTE="CRC32 uses the Linux cksum format."
+    else
+        L_USAGE="Verwendung:"
+        L_OPTIONS="Optionen:"
+        L_HELP="Zeigt diese Hilfeseite an."
+        L_NC="Schaltet alle Farben ab (Fallback für ältere Konsolen)."
+        L_DE="Erzwingt deutsche Ausgabe."
+        L_EN="Erzwingt englische Ausgabe."
+        L_PARAMETER="Parameter:"
+        L_PATH="(Erforderlich) Pfad zu einer Datei, einem Ordner oder Platzhalter."
+        L_PATH2="Ordner werden ohne Unterordner verarbeitet. Platzhalter werden unterstützt."
+        L_ALGO="(Optional) Hash-Algorithmus."
+        L_ALGO2="Standard: SHA256."
+        L_ALGO3="Gültig: MD2, MD4, MD5, SHA1, SHA256, SHA384, SHA512, BLAKE2, B2, BLAKE2B, BLAKE2S, CRC32."
+        L_HASHFILE="(Optional) Datei mit Referenz-Hashes."
+        L_HASHFILE2="Darf einen beliebigen Namen und jede Endung besitzen."
+        L_NO_PATH="Fehler: Kein Pfad angegeben."
+        L_HINT="Geben Sie \"${0##*/} --help\" ein, um die Hilfe anzuzeigen."
+        L_HASHFILE_NOT_FOUND="Hashdatei nicht gefunden:"
+        L_PATH_NOT_FOUND="Pfad, Platzhalter oder Ordner nicht gefunden:"
+        L_ERROR="FEHLER"
+        L_UNSUPPORTED="Fehler: Der angegebene Algorithmus wird nicht unterstützt:"
+        L_MISSING_HASHFILE="Fehler: --hashfile benötigt einen Dateinamen."
+        L_CRC_NOTE="CRC32 verwendet das Linux-cksum-Format."
+    fi
+}
+
+# ====================================================================
+# Algorithmus normalisieren
+# ====================================================================
+
+normalize_algorithm() {
+    local requested="$1"
+    local upper="${requested^^}"
+
+    case "$upper" in
+        B2|BLAKE2|BLAKE2B)
+            echo "BLAKE2B"
+            ;;
+
+        BLAKE2S)
+            echo "BLAKE2S"
+            ;;
+
+        MD2|MD4|MD5|SHA1|SHA256|SHA384|SHA512|CRC32)
+            echo "$upper"
+            ;;
+
+        *)
+            return 1
+            ;;
+    esac
+}
+
+# ====================================================================
+# Prüfen, ob ein Parameter wie ein Algorithmus aussieht
+# ====================================================================
+
+looks_like_algorithm() {
+    local value="$1"
+    local upper="${value^^}"
+
+    [[ "$upper" =~ ^(MD|SHA|BLAKE|B2|CRC)[A-Z0-9-]*$ ]]
+}
+
+# ====================================================================
+# Hashdatei anhand ihres Dateinamens erkennen
+# ====================================================================
+
+is_hashfile_name() {
+    local file="$1"
+    local base
+    local lower
+
+    base="${file##*/}"
+    lower="${base,,}"
+
+    case "$base" in
+        SHA1SUM|SHA1SUMS|SHA1SUM.txt)
+            return 0
+            ;;
+
+        SHA224SUM|SHA224SUMS|SHA224SUM.txt)
+            return 0
+            ;;
+
+        SHA256SUM|SHA256SUMS|SHA256SUM.txt)
+            return 0
+            ;;
+
+        SHA384SUM|SHA384SUMS|SHA384SUM.txt)
+            return 0
+            ;;
+
+        SHA512SUM|SHA512SUMS|SHA512SUM.txt)
+            return 0
+            ;;
+
+        MD5SUM|MD5SUMS|MD5SUM.txt)
+            return 0
+            ;;
+
+        BLAKE2SUM|BLAKE2SUMS|BLAKE2SUM.txt)
+            return 0
+            ;;
+
+        B2SUM|B2SUMS|B2SUM.txt)
+            return 0
+            ;;
+    esac
+
+    # Zusätzlich bekannte Dateiendungen akzeptieren.
+    if [[ "$lower" =~ \.(sha|sha1|sha224|sha256|sha384|sha512|md2|md4|md5|blake2|b2|crc|crc32|txt)(sum)?$ ]]; then
+        return 0
+    fi
+
+    return 1
+}
+
+# ====================================================================
+# Algorithmus aus dem Hashdateinamen erkennen
+# ====================================================================
+
+algorithm_from_hashfile_name() {
+    local file="$1"
+    local base
+    local upper
+
+    base="${file##*/}"
+    upper="${base^^}"
+
+    case "$upper" in
+        SHA1SUM|SHA1SUMS|SHA1SUM.TXT)
+            echo "SHA1"
+            ;;
+
+        SHA224SUM|SHA224SUMS|SHA224SUM.TXT)
+            echo "SHA224"
+            ;;
+
+        SHA256SUM|SHA256SUMS|SHA256SUM.TXT)
+            echo "SHA256"
+            ;;
+
+        SHA384SUM|SHA384SUMS|SHA384SUM.TXT)
+            echo "SHA384"
+            ;;
+
+        SHA512SUM|SHA512SUMS|SHA512SUM.TXT)
+            echo "SHA512"
+            ;;
+
+        MD5SUM|MD5SUMS|MD5SUM.TXT)
+            echo "MD5"
+            ;;
+
+        BLAKE2SUM|BLAKE2SUMS|BLAKE2SUM.TXT)
+            echo "BLAKE2B"
+            ;;
+
+        B2SUM|B2SUMS|B2SUM.TXT)
+            echo "BLAKE2B"
+            ;;
+
+        *)
+            return 1
+            ;;
+    esac
+}
+
+# ====================================================================
+# Algorithmus aus dem Inhalt der Hashdatei erkennen
+#
+# Trägt der Dateiname keinen Algorithmus (z. B. sha.txt), wird der
+# Algorithmus aus der Hashlänge der ersten Datenzeile gelesen:
+#   32 = MD5, 40 = SHA1, 64 = SHA256, 96 = SHA384, 128 = SHA512
+# BLAKE2 ist über die Länge NICHT eindeutig erkennbar (128 Zeichen
+# wie SHA512, 64 Zeichen wie SHA256) und bleibt auf explizite
+# Angabe angewiesen.
+# ====================================================================
+
+detect_algorithm_from_hashfile_content() {
+    local file="$1"
+    local line token
+
+    while IFS= read -r line; do
+        line="${line%$'\r'}"
+        [[ "$line" =~ ^[[:space:]]*# ]] && continue
+        [[ -z "${line//[[:space:]]/}" ]] && continue
+
+        for token in $line; do
+            [[ "$token" =~ ^[0-9A-Fa-f]+$ ]] || continue
+
+            case "${#token}" in
+                32)  echo "MD5";    return 0 ;;
+                40)  echo "SHA1";   return 0 ;;
+                64)  echo "SHA256"; return 0 ;;
+                96)  echo "SHA384"; return 0 ;;
+                128) echo "SHA512"; return 0 ;;
+            esac
+        done
+    done < "$file"
+
+    return 1
+}
+
+# ====================================================================
+# Hilfe
+# ====================================================================
+
+show_help() {
+    load_texts
+
+    cat <<EOF
+
+${C_HEAD}$L_USAGE${C_RESET} ${C_FILE}${0##*/}${C_RESET} [Optionen] "Pfad" [Algorithmus] [Hashdatei]
+
+${C_HEAD}$L_OPTIONS${C_RESET}
+${C_TEXT}  -h, --help              $L_HELP
+  -nc, --no-color         $L_NC
+  -de                     $L_DE
+  -en                     $L_EN
+  -f, --hashfile DATEI    $L_HASHFILE
+                          $L_HASHFILE2${C_RESET}
+
+${C_HEAD}$L_PARAMETER${C_RESET}
+${C_TEXT}  Pfad                    $L_PATH
+                          $L_PATH2
+
+  Algorithmus             $L_ALGO
+                          $L_ALGO2
+                          $L_ALGO3
+
+  $L_CRC_NOTE${C_RESET}
+
+${C_HEAD}Beispiele:${C_RESET}
+${C_FILE}  ${0##*/} datei.tar.gz
+  ${0##*/} datei.tar.gz SHA256
+  ${0##*/} datei.tar.gz B2
+  ${0##*/} datei.tar.gz BLAKE2
+  ${0##*/} datei.tar.gz BLAKE2B
+  ${0##*/} datei.tar.gz BLAKE2S
+  ${0##*/} datei.tar.gz CRC32
+  ${0##*/} datei.tar.gz --hashfile meine_hashwerte
+  ${0##*/} '*' SHA256 --hashfile meine_hashwerte
+  ${0##*/} '*' B2 sha.txt
+  ${0##*/} ubuntu.iso SHA256SUMS
+  ${0##*/} ubuntu.iso ~/Downloads/SHA256SUMS
+  ${0##*/} Musik SHA512 --hashfile pruefung
+  ${0##*/} Musik/ SHA512 --hashfile pruefung
+  ${0##*/} /home/user/Musik SHA512${C_RESET}
+
+EOF
+}
+
+# ====================================================================
+# Kommandozeilenparameter einlesen
+# ====================================================================
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -h|--help)
+            SHOW_HELP=1
+            shift
+            ;;
+
+        -de)
+            OUT_LANG="DE"
+            shift
+            ;;
+
+        -en)
+            OUT_LANG="EN"
+            shift
+            ;;
+
+        -f|--hashfile)
+            if [[ $# -lt 2 ]]; then
+                load_texts
+                echo "${C_ERR}$L_MISSING_HASHFILE${C_RESET}" >&2
+                exit 1
+            fi
+
+            HASHFILE="$2"
+            shift 2
+            ;;
+
+        *)
+            POSITIONAL+=("$1")
+            shift
+            ;;
+    esac
+done
+
+load_texts
+
+if [[ "$SHOW_HELP" -eq 1 ]]; then
+    show_help
+    exit 0
+fi
+
+if [[ "${#POSITIONAL[@]}" -eq 0 ]]; then
+    echo "${C_ERR}$L_NO_PATH${C_RESET}"
+    echo "${C_TEXT}$L_HINT${C_RESET}"
+    exit 1
+fi
+
+# ====================================================================
+# Algorithmus am Ende der Parameter erkennen
+# ====================================================================
+
+LAST_INDEX=$((${#POSITIONAL[@]} - 1))
+LAST_PARAM="${POSITIONAL[$LAST_INDEX]}"
+
+if NORMALIZED_ALGO="$(normalize_algorithm "$LAST_PARAM")"; then
+
+    ALGO="$NORMALIZED_ALGO"
+    EXPLICIT_ALGO=1
+
+    unset 'POSITIONAL[$LAST_INDEX]'
+    POSITIONAL=("${POSITIONAL[@]}")
+
+else
+    # Unbekannte algorithmusähnliche Parameter melden.
+    #
+    # Beispiele:
+    #   csum * crc16
+    #   csum datei.bin CRC16
+    #   csum datei.bin WHIRLPOOL
+    #
+    # Ein vorhandener Datei- oder Verzeichnisname bleibt
+    # weiterhin ein gültiges Ziel.
+    if [[ "${#POSITIONAL[@]}" -ge 2 \
+          && ! -e "$LAST_PARAM" ]] \
+          && looks_like_algorithm "$LAST_PARAM"; then
+
+        echo "${C_ERR}$L_UNSUPPORTED $LAST_PARAM${C_RESET}" >&2
+        exit 1
+    fi
+fi
+
+# ====================================================================
+# Hashdatei anhand des Namens erkennen
+# ====================================================================
+
+if [[ -z "$HASHFILE" && "${#POSITIONAL[@]}" -ge 2 ]]; then
+
+    LAST_INDEX=$((${#POSITIONAL[@]} - 1))
+    LAST_PARAM="${POSITIONAL[$LAST_INDEX]}"
+
+    if is_hashfile_name "$LAST_PARAM"; then
+
+        HASHFILE="$LAST_PARAM"
+
+        # Bei Namen wie SHA256SUMS den Algorithmus automatisch setzen.
+        DETECTED_ALGO="$(algorithm_from_hashfile_name "$HASHFILE" || true)"
+
+        if [[ -n "$DETECTED_ALGO" ]]; then
+
+            if [[ "$DETECTED_ALGO" == "SHA224" ]]; then
+                echo "${C_ERR}$L_UNSUPPORTED SHA224${C_RESET}" >&2
+                exit 1
+            fi
+
+            ALGO="$DETECTED_ALGO"
+            EXPLICIT_ALGO=1
+        fi
+
+        unset 'POSITIONAL[$LAST_INDEX]'
+        POSITIONAL=("${POSITIONAL[@]}")
+
+        # Nach Entfernen der Hashdatei kann noch ein Algorithmus
+        # am Ende der Parameter stehen.
+        if [[ "${#POSITIONAL[@]}" -ge 2 ]]; then
+
+            LAST_INDEX=$((${#POSITIONAL[@]} - 1))
+            POSSIBLE_ALGO="${POSITIONAL[$LAST_INDEX]}"
+
+            if NORMALIZED_ALGO="$(normalize_algorithm "$POSSIBLE_ALGO")"; then
+
+                ALGO="$NORMALIZED_ALGO"
+                EXPLICIT_ALGO=1
+
+                unset 'POSITIONAL[$LAST_INDEX]'
+                POSITIONAL=("${POSITIONAL[@]}")
+
+            elif looks_like_algorithm "$POSSIBLE_ALGO"; then
+
+                echo "${C_ERR}$L_UNSUPPORTED $POSSIBLE_ALGO${C_RESET}" >&2
+                exit 1
+            fi
+        fi
+    fi
+fi
+
+# ====================================================================
+# Zielpfade übernehmen
+# ====================================================================
+
+TARGETS=("${POSITIONAL[@]}")
+
+if [[ "${#TARGETS[@]}" -eq 0 ]]; then
+    echo "${C_ERR}$L_NO_PATH${C_RESET}"
+    echo "${C_TEXT}$L_HINT${C_RESET}"
+    exit 1
+fi
+
+# ====================================================================
+# Hashdatei prüfen
+# ====================================================================
+
+if [[ -n "$HASHFILE" && ! -f "$HASHFILE" ]]; then
+    echo "${C_ERR}$L_HASHFILE_NOT_FOUND${C_RESET} ${C_FILE}\"$HASHFILE\"${C_RESET}" >&2
+    exit 1
+fi
+
+# ====================================================================
+# Algorithmus aus dem Inhalt der Hashdatei übernehmen
+#
+# Nur wenn der Algorithmus NICHT explizit angegeben wurde (Parameter
+# oder Hashdateiname). Der Standard SHA256 wird dabei ebenfalls
+# ersetzt, wenn die Hashlänge eindeutig etwas anderes ergibt.
+# ====================================================================
+
+if [[ -n "$HASHFILE" && "$EXPLICIT_ALGO" -eq 0 ]]; then
+    DETECTED_HASH_ALGO="$(detect_algorithm_from_hashfile_content "$HASHFILE" || true)"
+
+    if [[ -n "$DETECTED_HASH_ALGO" ]]; then
+        ALGO="$DETECTED_HASH_ALGO"
+    fi
+fi
+
+# ====================================================================
+# Prüfen, ob eine Datei die Hashdatei ist
+# ====================================================================
+
+is_hashfile() {
+    local file="$1"
+
+    if [[ -n "$HASHFILE" && "$file" == "$HASHFILE" ]]; then
+        return 0
+    fi
+
+    return 1
+}
+
+# ====================================================================
+# Hash berechnen
+# ====================================================================
+
+calculate_hash() {
+    local file="$1"
+
+    case "$ALGO" in
+        MD2)
+            if command -v openssl >/dev/null 2>&1; then
+                openssl dgst -md2 -- "$file" | awk '{print $NF}'
+            else
+                return 1
+            fi
+            ;;
+
+        MD4)
+            if command -v openssl >/dev/null 2>&1; then
+                openssl dgst -md4 -- "$file" | awk '{print $NF}'
+            else
+                return 1
+            fi
+            ;;
+
+        MD5)
+            if command -v md5sum >/dev/null 2>&1; then
+                md5sum -- "$file" | awk '{print $1}'
+            elif command -v openssl >/dev/null 2>&1; then
+                openssl dgst -md5 -- "$file" | awk '{print $NF}'
+            else
+                return 1
+            fi
+            ;;
+
+        SHA1)
+            if command -v sha1sum >/dev/null 2>&1; then
+                sha1sum -- "$file" | awk '{print $1}'
+            elif command -v openssl >/dev/null 2>&1; then
+                openssl dgst -sha1 -- "$file" | awk '{print $NF}'
+            else
+                return 1
+            fi
+            ;;
+
+        SHA256)
+            if command -v sha256sum >/dev/null 2>&1; then
+                sha256sum -- "$file" | awk '{print $1}'
+            elif command -v openssl >/dev/null 2>&1; then
+                openssl dgst -sha256 -- "$file" | awk '{print $NF}'
+            else
+                return 1
+            fi
+            ;;
+
+        SHA384)
+            if command -v sha384sum >/dev/null 2>&1; then
+                sha384sum -- "$file" | awk '{print $1}'
+            elif command -v openssl >/dev/null 2>&1; then
+                openssl dgst -sha384 -- "$file" | awk '{print $NF}'
+            else
+                return 1
+            fi
+            ;;
+
+        SHA512)
+            if command -v sha512sum >/dev/null 2>&1; then
+                sha512sum -- "$file" | awk '{print $1}'
+            elif command -v openssl >/dev/null 2>&1; then
+                openssl dgst -sha512 -- "$file" | awk '{print $NF}'
+            else
+                return 1
+            fi
+            ;;
+
+        BLAKE2B)
+            if command -v b2sum >/dev/null 2>&1; then
+                b2sum -- "$file" | awk '{print $1}'
+            elif command -v openssl >/dev/null 2>&1; then
+                openssl dgst -blake2b512 -- "$file" | awk '{print $NF}'
+            else
+                return 1
+            fi
+            ;;
+
+        BLAKE2S)
+            if command -v openssl >/dev/null 2>&1; then
+                openssl dgst -blake2s256 -- "$file" | awk '{print $NF}'
+            else
+                return 1
+            fi
+            ;;
+
+        CRC32)
+            if command -v cksum >/dev/null 2>&1; then
+                # cksum gibt CRC-Wert, Dateigröße und Dateiname aus.
+                # Benötigt wird ausschließlich der CRC-Wert.
+                cksum -- "$file" | awk '{print $1}'
+            else
+                return 1
+            fi
+            ;;
+
+        *)
+            echo "$L_UNSUPPORTED $ALGO" >&2
+            return 1
+            ;;
+    esac
+}
+
+# ====================================================================
+# Einzelne Datei verarbeiten
+# ====================================================================
+
+process_file() {
+    local file="$1"
+    local hash
+
+    if is_hashfile "$file"; then
+        return 0
+    fi
+
+    if [[ ! -r "$file" ]]; then
+        printf '[%s] "%s"\n' "${C_ERR}${L_ERROR}${C_RESET}" "${C_FILE}${file}${C_RESET}"
+        return 0
+    fi
+
+    if ! hash="$(calculate_hash "$file")" || [[ -z "$hash" ]]; then
+        printf '[%s] "%s"\n' "${C_ERR}${L_ERROR}${C_RESET}" "${C_FILE}${file}${C_RESET}"
+        return 0
+    fi
+
+    if [[ -n "$HASHFILE" ]]; then
+
+        # Der Hash wird als feste Zeichenkette gesucht.
+        # Groß-/Kleinschreibung wird ignoriert.
+        if grep -Fqi -- "$hash" "$HASHFILE"; then
+            printf '%s "%s" = %s\n' "${C_OK}[OK]${C_RESET}" "${C_FILE}${file}${C_RESET}" "${C_OK}${hash}${C_RESET}"
+        else
+            printf '%s "%s" = %s\n' "${C_ERR}[FAIL]${C_RESET}" "${C_FILE}${file}${C_RESET}" "${C_ERR}${hash}${C_RESET}"
+        fi
+
+    else
+        printf '%s = %s\n' "${C_FILE}\"${file}\"${C_RESET}" "${C_OK}${hash}${C_RESET}"
+    fi
+}
+
+# ====================================================================
+# Datei oder Verzeichnis verarbeiten
+# ====================================================================
+
+process_path() {
+    local path="$1"
+    local file
+
+    if [[ -d "$path" ]]; then
+
+        # Nur Dateien direkt in diesem Verzeichnis verarbeiten.
+        # Unterverzeichnisse werden nicht durchsucht.
+        while IFS= read -r -d '' file; do
+            process_file "$file"
+        done < <(
+            find "$path" \
+                -maxdepth 1 \
+                -type f \
+                -print0
+        )
+
+    elif [[ -f "$path" ]]; then
+        process_file "$path"
+
+    else
+        echo "${C_ERR}$L_PATH_NOT_FOUND${C_RESET} ${C_FILE}\"$path\"${C_RESET}" >&2
+        return 1
+    fi
+}
+
+# ====================================================================
+# Ziele verarbeiten
+# ====================================================================
+
+FOUND=0
+
+for TARGET in "${TARGETS[@]}"; do
+
+    # Quotierte Wildcards behandeln, zum Beispiel:
+    #
+    #   csum '*'
+    #
+    # Es werden ausschließlich Dateien verarbeitet.
+    # Verzeichnisse werden ignoriert.
+    if [[ "$TARGET" == *'*'* || "$TARGET" == *'?'* ]]; then
+
+        MATCHES=()
+
+        while IFS= read -r MATCH; do
+            MATCHES+=("$MATCH")
+        done < <(compgen -G "$TARGET" || true)
+
+        for MATCH in "${MATCHES[@]}"; do
+            [[ -z "$MATCH" ]] && continue
+
+            # Verzeichnisse bei Wildcard-Treffern ignorieren.
+            if [[ ! -f "$MATCH" ]]; then
+                continue
+            fi
+
+            # Hashdatei nicht selbst prüfen.
+            if is_hashfile "$MATCH"; then
+                continue
+            fi
+
+            FOUND=1
+            process_file "$MATCH"
+        done
+
+    else
+        # Bei einem unquotierten * hat Bash den Ausdruck bereits
+        # in einzelne Dateien und Verzeichnisse aufgelöst.
+
+        # Normale Datei direkt verarbeiten.
+        if [[ -f "$TARGET" ]]; then
+
+            if is_hashfile "$TARGET"; then
+                continue
+            fi
+
+            FOUND=1
+            process_file "$TARGET"
+
+        elif [[ -d "$TARGET" ]]; then
+
+            # Ein einzelnes direkt angegebenes Verzeichnis wird
+            # verarbeitet.
+            #
+            # Beispiele:
+            #   csum Musik
+            #   csum Musik/
+            #   csum /home/user/Musik
+            #   csum .
+            #
+            # Wenn mehrere Ziele durch "*" entstanden sind,
+            # werden Verzeichnisse ignoriert.
+            if [[ "${#TARGETS[@]}" -eq 1 \
+                  || "$TARGET" == */ \
+                  || "$TARGET" == "." \
+                  || "$TARGET" == ".." ]]; then
+
+                FOUND=1
+                process_path "$TARGET"
+            fi
+        fi
+    fi
+done
+
+if [[ "$FOUND" -eq 0 ]]; then
+    echo "${C_ERR}$L_PATH_NOT_FOUND${C_RESET} ${C_FILE}\"${TARGETS[*]}\"${C_RESET}" >&2
+    exit 1
+fi
+
+exit 0
