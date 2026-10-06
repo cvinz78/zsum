@@ -8,7 +8,7 @@
 [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20Windows-blue)](#)
 [![Linux](https://img.shields.io/badge/shell-Bash-black)](#)
 [![Windows](https://img.shields.io/badge/shell-Batch%20%2F%20cmd-0078D4)](#)
-[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Version](https://img.shields.io/badge/version-1.2-orange)](#)
 
 <img src="screenshots/linux-create.png" alt="zsum unter Linux" width="49%"> <img src="screenshots/windows-verify.png" alt="zsum unter Windows" width="49%">
@@ -222,9 +222,7 @@ zsum -en urlaub.iso SHA512     # Fehlermeldung auf Englisch
 
 ### 📄 Lizenz
 
-Copyright (C) 2025 cvinz78
-
-zsum ist Freie Software: es kann unter den Bedingungen der **GNU General Public License Version 3** (GPL-3.0) weiterverwendet, verändert und weitergegeben werden — siehe [LICENSE](LICENSE). Die GPL ist eine Copyleft-Lizenz: Abgeleitete Fassungen müssen ebenfalls unter der GPL-3.0 veröffentlicht werden.
+Copyright (c) 2025 cvinz78 — lizenziert unter der **MIT-Lizenz**, siehe [LICENSE](LICENSE). Die MIT-Lizenz erlaubt die freie Verwendung, Veränderung und Weitergabe — auch in kommerziellen Projekten; einzigen Bedingung ist der Erhalt des Copyright-Hinweises.
 
 ---
 
@@ -428,6 +426,4 @@ zsum -en urlaub.iso SHA512     # error message in English
 
 ### 📄 License
 
-Copyright (C) 2025 cvinz78
-
-zsum is free software: you can redistribute and/or modify it under the terms of the **GNU General Public License version 3** (GPL-3.0) — see [LICENSE](LICENSE). The GPL is a copyleft license: derived versions must be released under the GPL-3.0 as well.
+Copyright (c) 2025 cvinz78 — licensed under the **MIT License**, see [LICENSE](LICENSE). The MIT license permits free use, modification, and distribution — including in commercial projects; the only condition is keeping the copyright notice.
