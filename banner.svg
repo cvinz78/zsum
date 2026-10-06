@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="320" viewBox="0 0 1280 320">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0d1522"/>
+      <stop offset="0.55" stop-color="#101b2c"/>
+      <stop offset="1" stop-color="#0c1420"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#2dd4a0"/>
+      <stop offset="1" stop-color="#3b82f6"/>
+    </linearGradient>
+    <linearGradient id="fade" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#58a6ff" stop-opacity="0.10"/>
+      <stop offset="1" stop-color="#58a6ff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- background -->
+  <rect x="0" y="0" width="1280" height="320" rx="22" fill="url(#bg)"/>
+  <rect x="1" y="1" width="1278" height="318" rx="21" fill="none" stroke="#2a3a52" stroke-width="2"/>
+  <rect x="1" y="1" width="1278" height="150" rx="21" fill="url(#fade)"/>
+
+  <!-- faint hash strings -->
+  <g font-family="Adwaita Mono, monospace" font-size="15" fill="#7d93b3">
+    <text x="36"  y="56"  opacity="0.16">a3f9c1e7b2d4805691acff0d3e7b21c4</text>
+    <text x="980" y="56"  opacity="0.16">9e1078f2d6c53b1a</text>
+    <text x="36"  y="292" opacity="0.16">5d41402abc4b2a76b9719d911017c592</text>
+    <text x="920" y="292" opacity="0.16">7f3a90cc4b1d28e6</text>
+    <text x="640" y="32"  opacity="0.10" text-anchor="middle">sha256 · blake2 · crc32 · md5 · sha512</text>
+  </g>
+
+  <!-- window dots -->
+  <g>
+    <circle cx="42" cy="34" r="7" fill="#ff5f57"/>
+    <circle cx="66" cy="34" r="7" fill="#febc2e"/>
+    <circle cx="90" cy="34" r="7" fill="#28c840"/>
+  </g>
+
+  <!-- prompt + title -->
+  <text x="640" y="150" text-anchor="middle" font-family="Adwaita Mono, monospace" font-size="118" font-weight="bold" letter-spacing="2">
+    <tspan fill="#2dd4a0">$ </tspan><tspan fill="#f0f6fc">zsum</tspan>
+  </text>
+
+  <!-- accent underline -->
+  <rect x="510" y="176" width="260" height="6" rx="3" fill="url(#accent)"/>
+
+  <!-- tagline -->
+  <text x="640" y="222" text-anchor="middle" font-family="Adwaita Sans, sans-serif" font-size="26" fill="#a9c0dd">Prüfsummen erstellen &amp; prüfen — Create &amp; verify checksums</text>
+
+  <!-- platform pills -->
+  <g font-family="Adwaita Sans, sans-serif" font-size="21" font-weight="bold">
+    <!-- Linux pill -->
+    <rect x="418" y="248" width="200" height="44" rx="22" fill="#16263c" stroke="#2dd4a0" stroke-opacity="0.55" stroke-width="1.5"/>
+    <g transform="translate(444,270)">
+      <rect x="-13" y="-11" width="26" height="22" rx="5" fill="none" stroke="#2dd4a0" stroke-width="2"/>
+      <text x="0" y="7" text-anchor="middle" font-family="Adwaita Mono, monospace" font-size="15" font-weight="bold" fill="#2dd4a0">&gt;_</text>
+    </g>
+    <text x="478" y="277" fill="#dce8f7">Linux</text>
+
+    <!-- Windows pill -->
+    <rect x="662" y="248" width="200" height="44" rx="22" fill="#16263c" stroke="#3b82f6" stroke-opacity="0.55" stroke-width="1.5"/>
+    <g transform="translate(688,270)" fill="#3b82f6">
+      <rect x="-11" y="-11" width="10" height="10"/>
+      <rect x="1"  y="-11" width="10" height="10"/>
+      <rect x="-11" y="1"  width="10" height="10"/>
+      <rect x="1"  y="1"  width="10" height="10"/>
+    </g>
+    <text x="716" y="277" fill="#dce8f7">Windows</text>
+  </g>
+</svg>

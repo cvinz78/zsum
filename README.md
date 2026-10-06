@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="banner.png" alt="zsum — Prüfsummen erstellen und prüfen unter Linux und Windows" width="100%">
+
 # zsum
 
 **Prüfsummen erstellen und prüfen — unter Linux und Windows**
