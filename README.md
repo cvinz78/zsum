@@ -119,7 +119,6 @@ zsum [Optionen] "Pfad" [Algorithmus] [Hashdatei]
 | `-h`, `--help` (Windows zusätzlich: `/?`, `-?`) | Hilfeseite anzeigen |
 | `-de` / `-en` | Ausgabe auf Deutsch bzw. Englisch erzwingen |
 | `-nc`, `--no-color` (nur Linux) | Farben für diesen Aufruf abschalten |
-| `-f`, `--hashfile DATEI` (nur Linux) | Hashdatei angeben (unter Windows steht sie einfach als letzter Parameter) |
 
 **Beispiele**
 
@@ -150,8 +149,7 @@ Prüfsummen in eine Datei speichern (Umleitung) und später abgleichen:
 
 ```bash
 zsum Musik > pruefung.txt      # speichern
-zsum Musik --hashfile pruefung.txt   # Linux: abgleichen
-zsum Musik pruefung.txt        # Windows: abgleichen
+zsum Musik pruefung.txt        # abgleichen
 ```
 
 Beim Abgleich meldet zsum je Datei `[OK]` oder `[FAIL]` — so fällt eine veränderte oder beschädigte Datei sofort auf:
@@ -209,7 +207,7 @@ zsum -en urlaub.iso SHA512     # Fehlermeldung auf Englisch
 |---|---|---|
 | Algorithmen | inkl. BLAKE2, BLAKE2S, CRC32 | MD2–SHA512 (certutil) |
 | Ordner werden verarbeitet | **ohne** Unterordner | **rekursiv, inkl.** Unterordner |
-| Hashdatei angeben | `--hashfile DATEI` oder letzter Parameter | letzter Parameter |
+| Hashdatei angeben | letzter Parameter | letzter Parameter |
 | Algorithmus-Auto-Erkennung | Hashlänge **und** Dateiname (z. B. `SHA256SUMS`) | Hashlänge |
 | Farben dauerhaft abschalten | Umgebungsvariable `NO_COLOR` | `NO_COLOR=1` oben im Skript setzen |
 
@@ -326,7 +324,6 @@ zsum [options] "path" [algorithm] [hashfile]
 | `-h`, `--help` (Windows also: `/?`, `-?`) | Show the help page |
 | `-de` / `-en` | Force German or English output |
 | `-nc`, `--no-color` (Linux only) | Disable colors for this call |
-| `-f`, `--hashfile FILE` (Linux only) | Provide the hashfile (on Windows simply pass it as the last parameter) |
 
 **Examples**
 
@@ -356,8 +353,7 @@ Save checksums to a file (redirection) and verify later:
 
 ```bash
 zsum Music > hashes.txt              # save
-zsum Music --hashfile hashes.txt     # Linux: verify
-zsum Music hashes.txt                # Windows: verify
+zsum Music hashes.txt                # verify
 ```
 
 During verification zsum reports `[OK]` or `[FAIL]` per file, so modified or corrupted files are spotted instantly:
@@ -414,7 +410,7 @@ zsum -en urlaub.iso SHA512     # error message in English
 |---|---|---|
 | Algorithms | incl. BLAKE2, BLAKE2S, CRC32 | MD2–SHA512 (certutil) |
 | Folders are processed | **without** subfolders | **recursively, incl.** subfolders |
-| Provide hashfile | `--hashfile FILE` or last parameter | last parameter |
+| Provide hashfile | last parameter | last parameter |
 | Algorithm auto-detection | hash length **and** file name (e.g. `SHA256SUMS`) | hash length |
 | Disable colors permanently | `NO_COLOR` environment variable | set `NO_COLOR=1` at the top of the script |
 
