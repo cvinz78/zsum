@@ -27,9 +27,7 @@
   </g>
 
   <!-- ============ left: title block ============ -->
-  <text x="60" y="140" font-family="Adwaita Mono, monospace" font-size="100" font-weight="bold" letter-spacing="2">
-    <tspan fill="#2dd4a0">$ </tspan><tspan fill="#f0f6fc">zsum</tspan>
-  </text>
+  <text x="60" y="140" font-family="Adwaita Mono, monospace" font-size="100" font-weight="bold" letter-spacing="2" fill="#f0f6fc">zsum</text>
   <rect x="62" y="164" width="240" height="6" rx="3" fill="url(#accent)"/>
 
   <g font-family="Adwaita Sans, sans-serif" font-size="26" fill="#a9c0dd">
@@ -66,7 +64,7 @@
     <circle cx="762" cy="61" r="6" fill="#28c840"/>
 
     <g font-family="Adwaita Mono, monospace" font-size="17">
-      <text x="720" y="110"><tspan fill="#2dd4a0">$&#160;</tspan><tspan fill="#e6eef8">zsum Musik --hashfile pruefung.txt</tspan></text>
+      <text x="720" y="110" fill="#e6eef8">zsum Musik pruefung.txt</text>
 
       <text x="720" y="146" fill="#9fb3cc">"Song 01.mp3" = 8f3a91c2d4e5…</text>
       <text x="1210" y="146" text-anchor="end" font-weight="bold" fill="#2dd4a0">[OK]</text>
