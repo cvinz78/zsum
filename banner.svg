@@ -23,48 +23,61 @@
   <!-- faint hash strings -->
   <g font-family="Adwaita Mono, monospace" font-size="15" fill="#7d93b3">
     <text x="36"  y="56"  opacity="0.16">a3f9c1e7b2d4805691acff0d3e7b21c4</text>
-    <text x="980" y="56"  opacity="0.16">9e1078f2d6c53b1a</text>
-    <text x="36"  y="292" opacity="0.16">5d41402abc4b2a76b9719d911017c592</text>
-    <text x="920" y="292" opacity="0.16">7f3a90cc4b1d28e6</text>
-    <text x="640" y="32"  opacity="0.10" text-anchor="middle">sha256 · blake2 · crc32 · md5 · sha512</text>
+    <text x="560" y="300" opacity="0.12" font-size="14">sha256 · blake2 · crc32 · md5 · sha512</text>
   </g>
 
-  <!-- window dots -->
-  <g>
-    <circle cx="42" cy="34" r="7" fill="#ff5f57"/>
-    <circle cx="66" cy="34" r="7" fill="#febc2e"/>
-    <circle cx="90" cy="34" r="7" fill="#28c840"/>
-  </g>
-
-  <!-- prompt + title -->
-  <text x="640" y="150" text-anchor="middle" font-family="Adwaita Mono, monospace" font-size="118" font-weight="bold" letter-spacing="2">
+  <!-- ============ left: title block ============ -->
+  <text x="60" y="140" font-family="Adwaita Mono, monospace" font-size="100" font-weight="bold" letter-spacing="2">
     <tspan fill="#2dd4a0">$ </tspan><tspan fill="#f0f6fc">zsum</tspan>
   </text>
+  <rect x="62" y="164" width="240" height="6" rx="3" fill="url(#accent)"/>
 
-  <!-- accent underline -->
-  <rect x="510" y="176" width="260" height="6" rx="3" fill="url(#accent)"/>
-
-  <!-- tagline -->
-  <text x="640" y="222" text-anchor="middle" font-family="Adwaita Sans, sans-serif" font-size="26" fill="#a9c0dd">Prüfsummen erstellen &amp; prüfen — Create &amp; verify checksums</text>
+  <g font-family="Adwaita Sans, sans-serif" font-size="26" fill="#a9c0dd">
+    <text x="62" y="212">Prüfsummen erstellen &amp; prüfen</text>
+    <text x="62" y="244" fill="#7d93b3" font-size="22">Create &amp; verify checksums</text>
+  </g>
 
   <!-- platform pills -->
-  <g font-family="Adwaita Sans, sans-serif" font-size="21" font-weight="bold">
-    <!-- Linux pill -->
-    <rect x="418" y="248" width="200" height="44" rx="22" fill="#16263c" stroke="#2dd4a0" stroke-opacity="0.55" stroke-width="1.5"/>
-    <g transform="translate(444,270)">
-      <rect x="-13" y="-11" width="26" height="22" rx="5" fill="none" stroke="#2dd4a0" stroke-width="2"/>
-      <text x="0" y="7" text-anchor="middle" font-family="Adwaita Mono, monospace" font-size="15" font-weight="bold" fill="#2dd4a0">&gt;_</text>
+  <g font-family="Adwaita Sans, sans-serif" font-size="20" font-weight="bold">
+    <rect x="62" y="262" width="186" height="42" rx="21" fill="#16263c" stroke="#2dd4a0" stroke-opacity="0.55" stroke-width="1.5"/>
+    <g transform="translate(86,283)">
+      <rect x="-12" y="-10" width="24" height="20" rx="5" fill="none" stroke="#2dd4a0" stroke-width="2"/>
+      <text x="0" y="6" text-anchor="middle" font-family="Adwaita Mono, monospace" font-size="14" font-weight="bold" fill="#2dd4a0">&gt;_</text>
     </g>
-    <text x="478" y="277" fill="#dce8f7">Linux</text>
+    <text x="114" y="290" fill="#dce8f7">Linux</text>
 
-    <!-- Windows pill -->
-    <rect x="662" y="248" width="200" height="44" rx="22" fill="#16263c" stroke="#3b82f6" stroke-opacity="0.55" stroke-width="1.5"/>
-    <g transform="translate(688,270)" fill="#3b82f6">
-      <rect x="-11" y="-11" width="10" height="10"/>
-      <rect x="1"  y="-11" width="10" height="10"/>
-      <rect x="-11" y="1"  width="10" height="10"/>
-      <rect x="1"  y="1"  width="10" height="10"/>
+    <rect x="264" y="262" width="196" height="42" rx="21" fill="#16263c" stroke="#3b82f6" stroke-opacity="0.55" stroke-width="1.5"/>
+    <g transform="translate(290,283)" fill="#3b82f6">
+      <rect x="-10" y="-10" width="9" height="9"/>
+      <rect x="1"  y="-10" width="9" height="9"/>
+      <rect x="-10" y="1"  width="9" height="9"/>
+      <rect x="1"  y="1"  width="9" height="9"/>
     </g>
-    <text x="716" y="277" fill="#dce8f7">Windows</text>
+    <text x="312" y="290" fill="#dce8f7">Windows</text>
+  </g>
+
+  <!-- ============ right: terminal card ============ -->
+  <g>
+    <rect x="700" y="44" width="530" height="232" rx="14" fill="#0a1018" stroke="#2a3a52" stroke-width="1.5"/>
+    <path d="M 700 58 a 14 14 0 0 1 14 -14 h 502 a 14 14 0 0 1 14 14 v 22 h -530 z" fill="#131c2b"/>
+    <line x1="700" y1="80" x2="1230" y2="80" stroke="#2a3a52" stroke-width="1.5"/>
+    <circle cx="722" cy="61" r="6" fill="#ff5f57"/>
+    <circle cx="742" cy="61" r="6" fill="#febc2e"/>
+    <circle cx="762" cy="61" r="6" fill="#28c840"/>
+
+    <g font-family="Adwaita Mono, monospace" font-size="17">
+      <text x="720" y="110"><tspan fill="#2dd4a0">$&#160;</tspan><tspan fill="#e6eef8">zsum Musik --hashfile pruefung.txt</tspan></text>
+
+      <text x="720" y="146" fill="#9fb3cc">"Song 01.mp3" = 8f3a91c2d4e5…</text>
+      <text x="1210" y="146" text-anchor="end" font-weight="bold" fill="#2dd4a0">[OK]</text>
+
+      <text x="720" y="178" fill="#9fb3cc">"Song 02.mp3" = 44d97b0e6a1f…</text>
+      <text x="1210" y="178" text-anchor="end" font-weight="bold" fill="#2dd4a0">[OK]</text>
+
+      <text x="720" y="210" fill="#9fb3cc">"Backup.iso" = 9e1078f2d6c5…</text>
+      <text x="1210" y="210" text-anchor="end" font-weight="bold" fill="#f85149">[FAIL]</text>
+
+      <text x="720" y="248" fill="#5c718c" font-size="15">3 Dateien · sha256 automatisch erkannt</text>
+    </g>
   </g>
 </svg>
