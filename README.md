@@ -176,6 +176,9 @@ zsum sucht den berechneten Hash **zeichenweise innerhalb jeder Zeile** der Hashd
 
 Wurde kein Algorithmus angegeben, erkennt zsum ihn **automatisch aus der Hashdatei** (Hashlänge: 32 = MD5, 40 = SHA1, 64 = SHA256, 96 = SHA384, 128 = SHA512); unter Linux zusätzlich aus bekannten Dateinamen wie `SHA256SUMS` oder `*.md5`. Eine explizite Angabe hat immer Vorrang.
 
+#### Umbenennen
+Sie könnt das Script beliebig umbenennen, es wird dann in der Hilfe und den Beispielen diesen neuen Namen anzeigen.
+
 #### 🧮 Algorithmen
 
 | Algorithmus | Linux | Windows |
@@ -378,6 +381,10 @@ zsum searches for the computed hash **as a substring within each line** of the h
 - bare hash values, one per line (e.g. certutil output, hashes downloaded from servers)
 
 If no algorithm was specified, zsum **auto-detects it from the hashfile** (hash length: 32 = MD5, 40 = SHA1, 64 = SHA256, 96 = SHA384, 128 = SHA512); on Linux, well-known file names such as `SHA256SUMS` or `*.md5` are recognized as well. An explicit algorithm always takes precedence.
+
+#### Renaming
+
+You can rename the script as you like; it will then display this new name in the help section and the examples.
 
 #### 🧮 Algorithms
 
