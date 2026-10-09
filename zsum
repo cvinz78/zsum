@@ -98,6 +98,7 @@ load_texts() {
         L_HINT="Type \"${0##*/} --help\" to display help."
         L_HASHFILE_NOT_FOUND="Hashfile not found:"
         L_PATH_NOT_FOUND="Path, wildcard, or directory not found:"
+        L_NO_FILES_ONLY_DIRS="No files found, only directories:"
         L_ERROR="ERROR"
         L_UNSUPPORTED="Error: The specified algorithm is not supported:"
         L_MISSING_HASHFILE="Error: --hashfile requires a filename."
@@ -121,6 +122,7 @@ load_texts() {
         L_HINT="Geben Sie \"${0##*/} --help\" ein, um die Hilfe anzuzeigen."
         L_HASHFILE_NOT_FOUND="Hashdatei nicht gefunden:"
         L_PATH_NOT_FOUND="Pfad, Platzhalter oder Ordner nicht gefunden:"
+        L_NO_FILES_ONLY_DIRS="Keine Dateien gefunden, nur Verzeichnisse:"
         L_ERROR="FEHLER"
         L_UNSUPPORTED="Fehler: Der angegebene Algorithmus wird nicht unterstützt:"
         L_MISSING_HASHFILE="Fehler: --hashfile benötigt einen Dateinamen."
@@ -728,6 +730,7 @@ process_path() {
 # ====================================================================
 
 FOUND=0
+DIRS_FOUND=0
 
 for TARGET in "${TARGETS[@]}"; do
 
@@ -750,6 +753,7 @@ for TARGET in "${TARGETS[@]}"; do
 
             # Verzeichnisse bei Wildcard-Treffern ignorieren.
             if [[ ! -f "$MATCH" ]]; then
+                DIRS_FOUND=1
                 continue
             fi
 
@@ -796,13 +800,24 @@ for TARGET in "${TARGETS[@]}"; do
 
                 FOUND=1
                 process_path "$TARGET"
+            else
+                # Verzeichnis, das durch einen Platzhalter entstanden
+                # ist, wird übersprungen - für die Fehlermeldung merken.
+                DIRS_FOUND=1
             fi
         fi
     fi
 done
 
 if [[ "$FOUND" -eq 0 ]]; then
-    echo "${C_ERR}$L_PATH_NOT_FOUND${C_RESET} ${C_FILE}\"${TARGETS[*]}\"${C_RESET}" >&2
+    if [[ "$DIRS_FOUND" -eq 1 ]]; then
+        # Es gab Treffer, aber ausschließlich Verzeichnisse und keine
+        # einzige Datei - daher die konkrete Meldung statt der
+        # allgemeinen "nicht gefunden"-Meldung.
+        echo "${C_ERR}$L_NO_FILES_ONLY_DIRS${C_RESET} ${C_FILE}\"${TARGETS[*]}\"${C_RESET}" >&2
+    else
+        echo "${C_ERR}$L_PATH_NOT_FOUND${C_RESET} ${C_FILE}\"${TARGETS[*]}\"${C_RESET}" >&2
+    fi
     exit 1
 fi
 

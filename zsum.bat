@@ -252,6 +252,7 @@ if /i "%LANG%"=="EN" (
   set "L_ERR_HINT=Type "%SCRIPT_NAME% -h" to display help."
   set "L_ERR_HASHFILE=Hashfile not found"
   set "L_ERR_PATH_NOT_FOUND=Path, wildcard, or directory not found:"
+  set "L_ERR_NO_FILES_ONLY_DIRS=No files found, only directories:"
   set "L_ERROR=ERROR"
 ) else (
   set "L_USAGE=Verwendung:"
@@ -278,6 +279,7 @@ if /i "%LANG%"=="EN" (
   set "L_ERR_HINT=Geben Sie "%SCRIPT_NAME% -h" ein, um die Hilfe anzuzeigen."
   set "L_ERR_HASHFILE=Hashdatei nicht gefunden"
   set "L_ERR_PATH_NOT_FOUND=Pfad, Platzhalter oder Ordner nicht gefunden:"
+  set "L_ERR_NO_FILES_ONLY_DIRS=Keine Dateien gefunden, nur Verzeichnisse:"
   set "L_ERROR=FEHLER"
 )
 
@@ -337,7 +339,10 @@ REM ====================================================================
 REM FUNKTION: IsWildcard
 REM Name: Wildcard-Verarbeitung
 REM Erklaerung: Wird aufgerufen, wenn * oder ? im Parameternamen steht.
-REM            Verarbeitet alle Treffer im aktuellen (oder angegebenen) Ordner.
+REM            Verarbeitet alle Datei-Treffer im aktuellen (oder
+REM            angegebenen) Ordner. Verzeichnisse werden von der
+REM            einfachen for-Schleife nicht geliefert; sie werden nur
+REM            fuer die Fehlermeldung per "for /d" gezaehlt.
 REM ====================================================================
 :IsWildcard
 set "FOUND=0"
@@ -350,8 +355,17 @@ for %%F in (%TARGET%) do (
 
 REM Name: Wildcard-Fehlerabfrage
 REM Erklaerung: Wenn kein einziges File gefunden wurde, gibt es eine Fehlermeldung.
+REM            Passte der Platzhalter ausschließlich auf Verzeichnisse (z.B.
+REM            "zsum *" in einem Ordner ohne Dateien), lautet die Meldung
+REM            entsprechend konkreter statt der allgemeinen "nicht gefunden"-Meldung.
 if "!FOUND!"=="0" (
-  echo %RED_H%%L_ERR_PATH_NOT_FOUND%%RESET% %MAGENTA_L%"%TARGET%"%RESET%
+  set "DIRS_FOUND=0"
+  for /d %%D in (%TARGET%) do set "DIRS_FOUND=1"
+  if "!DIRS_FOUND!"=="1" (
+    echo %RED_H%%L_ERR_NO_FILES_ONLY_DIRS%%RESET% %MAGENTA_L%"%TARGET%"%RESET%
+  ) else (
+    echo %RED_H%%L_ERR_PATH_NOT_FOUND%%RESET% %MAGENTA_L%"%TARGET%"%RESET%
+  )
   exit /b 1
 )
 :EndRouting
